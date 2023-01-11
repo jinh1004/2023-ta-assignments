@@ -1,4 +1,4 @@
-Assignment 0
+Exercise 0
 ================
 
 Hello, TA!
