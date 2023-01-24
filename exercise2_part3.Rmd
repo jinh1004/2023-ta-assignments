@@ -1,0 +1,89 @@
+---
+title: "Exercise 2 Part 3"
+author: "Team 2"
+date: "2023-01-24"
+output:
+  github_document: default
+  pdf_document: default
+---
+# Individual-Level Attributes
+## Import data
+```{r}
+indiv = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/indiv.csv')
+indiv_gender = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/indiv_gender.csv')
+indiv_race = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/indiv_race.csv')
+tenure = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/tenure.csv')
+separation_ind = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/separation_ind.csv')
+move_ind = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/move_ind.csv')
+```
+
+## Combine Dataframes
+```{r}
+final_indiv = merge(x = indiv, y = indiv_gender, by = 'new_pid', all = TRUE)
+final_indiv = final_indiv[, c('new_pid', 'gender2')]
+
+final_indiv = merge(x = final_indiv, y = indiv_race, by = 'new_pid', all = TRUE)
+final_indiv = final_indiv[, c('new_pid', 'gender2', 'race')]
+
+final_indiv = merge(x = final_indiv, y = tenure, by = 'new_pid', all = TRUE)
+final_indiv = final_indiv[, c('new_pid', 'gender2', 'race', 'tenure')]
+
+separation_ind$new_pid = separation_ind$indiv.new_pid
+final_indiv = merge(x = final_indiv, y = separation_ind, by = 'new_pid', all = TRUE)
+final_indiv = final_indiv[, c('new_pid', 'gender2', 'race', 'tenure', 'sep_ind')]
+
+final_indiv = merge(x = final_indiv, y = move_ind, by = 'new_pid', all = TRUE)
+final_indiv = final_indiv[, c('new_pid', 'gender2', 'race', 'tenure', 'sep_ind', 'move_ind')]
+
+
+final_indiv
+```
+
+## Make Adjustments
+```{r}
+# install.packages('stringr')
+library(stringr)
+final_indiv$race1 = str_sub(final_indiv$race, start = 6)
+final_indiv = transform(final_indiv, race2 = ifelse(race1 == 'asi', 'Asian', ifelse(race1 == 'bla', 'Black', ifelse(race1 == 'his', 'Hispanic', ifelse(race1 == 'whi', 'White', 'Other')))))
+final_indiv = final_indiv[, c('new_pid', 'gender2', 'race2', 'tenure', 'sep_ind', 'move_ind')]
+
+final_indiv$gender = final_indiv$gender2
+final_indiv$race = final_indiv$race2
+final_indiv = final_indiv[, c('new_pid', 'gender', 'race', 'tenure', 'sep_ind', 'move_ind')]
+final_indiv
+```
+
+## Export data
+```{r}
+write.csv(final_indiv, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/final_indiv.csv', row.names = FALSE)
+```
+
+
+# Quarterly Aggregated per Examiner
+## Import data
+```{r}
+new_app = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/new_app.csv')
+aban_app = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/aban_app.csv')
+allow_app = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/allow_app.csv')
+prog_app = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/prog_app.csv')
+```
+
+## Combine Dataframes
+```{r}
+aban_app$quarter = aban_app$quarter_aban
+final_quarter = merge(x = new_app, y = aban_app, by = c('examiner_id', 'quarter'), all = TRUE)
+final_quarter = final_quarter[, c('examiner_id', 'quarter', 'new_app', 'aban_app')]
+
+allow_app$quarter = allow_app$quarter_allow
+final_quarter = merge(x = final_quarter, y = allow_app, by = c('examiner_id', 'quarter'), all = TRUE)
+final_quarter = final_quarter[, c('examiner_id', 'quarter', 'new_app', 'aban_app', 'allow_app')]
+
+final_quarter = merge(x = final_quarter, y = prog_app, by = c('examiner_id', 'quarter'), all = TRUE)
+
+final_quarter
+```
+
+## Export data
+```{r}
+write.csv(final_quarter, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/final_quarter.csv', row.names = FALSE)
+```
