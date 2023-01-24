@@ -1,0 +1,157 @@
+---
+title: "Exercise 2 Part 2"
+author: "Team 2"
+date: "2023-01-24"
+output:
+  github_document: default
+  pdf_document: default
+---
+# Import the Data
+```{r}
+aus = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/examiner_aus.csv')
+gs = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/examiner_gs.csv')
+ids = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/examiner_ids.csv')
+```
+
+```{r, message = FALSE, warning = FALSE}
+library(arrow)
+app = read_parquet('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/app_data_sample.parquet')
+```
+
+# Panel Dataset of Quaterly Aggregated Production Measure for Each Examiner
+## Number of new applications
+```{r, warning = FALSE}
+library(lubridate)
+library(dplyr)
+app$quarter = quarter(app$filing_date, type = 'year.quarter')
+new_app = app %>% group_by(examiner_id, quarter) %>% summarize(new_app = n())
+new_app
+```
+
+## Number of abandoned applications
+```{r, warning = FALSE}
+library(lubridate)
+library(dplyr)
+app$quarter_aban = quarter(app$abandon_date, type = 'year.quarter')
+aban_app = app %>% group_by(examiner_id, quarter_aban) %>% summarize(aban_app = n())
+aban_app
+```
+
+Number of allowed applications
+```{r, warning = FALSE}
+library(lubridate)
+library(dplyr)
+app$quarter_allow = quarter(app$patent_issue_date, type = 'year.quarter')
+allow_app = app %>% group_by(examiner_id, quarter_allow) %>% summarize(allow_app = n())
+allow_app
+```
+
+Number of applications still in-process
+```{r, warning = FALSE}
+library(lubridate)
+library(dplyr)
+
+app$abandon_date = as.character(app$abandon_date)
+app$patent_issue_date = as.character(app$patent_issue_date)
+prog_app = app %>% group_by(examiner_id, quarter) %>% summarize(prog_app = sum((is.na(abandon_date) && is.na(patent_issue_date))))
+prog_app
+```
+
+# Art Units
+Current Art Unit
+```{r}
+library(dplyr)
+current_art = app %>% group_by(quarter) %>% summarize(current_art = n_distinct(examiner_art_unit))
+current_art
+```
+
+Number of people in art unit
+```{r, warning = FALSE}
+library(dplyr)
+people_art = app %>% group_by(quarter, examiner_art_unit) %>% summarize(current_art = n())
+people_art
+```
+
+Number of women in art unit
+```{r, include = FALSE}
+# DO NOT RUN THIS CELL
+# library(lubridate)
+# library(dplyr)
+# app$quarter = quarter(app$filing_date, type = 'year.quarter')
+# gender$examiner_id = gender$patex_id
+# gender1 = gender[, c('examiner_id', 'gender2')]
+
+# app2 = app[, c('quarter', 'examiner_id', 'examiner_art_unit')]
+# app2 = merge(x = app2, y = gender1, by = 'examiner_id', all.x = TRUE)
+# write.csv(app2, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/app2.csv', row.names = FALSE)
+```
+
+```{r}
+app2 = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/app2.csv')
+```
+
+```{r, warning = FALSE}
+library(dplyr)
+art_gender = app2 %>% group_by(quarter, examiner_art_unit, gender2) %>% summarize(current_art = n())
+art_gender
+```
+
+Number of examiners by race in art unit
+```{r, message = FALSE, warning = FALSE}
+# DO NOT RUN THIS CELL
+# library(lubridate)
+# library(dplyr)
+# app$quarter = quarter(app$filing_date, type = 'year.quarter')
+
+# race1 = merge(x = indiv_race, y = ids, by = 'old_pid', all.x = TRUE)
+# race1 = race1[, c('patex_id', 'race')]
+# race1$examiner_id = race1$patex_id
+
+# app1 = app[, c('quarter', 'examiner_id', 'examiner_art_unit')]
+# app1 = merge(x = app1, y = race1, by = 'examiner_id', all.x = TRUE)
+# write.csv(app1, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/app1.csv', row.names = FALSE)
+```
+
+```{r}
+app1 = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/app1.csv')
+```
+
+```{r, warning = FALSE}
+library(dplyr)
+art_race = app1 %>% group_by(quarter, examiner_art_unit, race) %>% summarize(current_art = n())
+art_race
+```
+
+
+
+# Indicators
+Separation indicator (examiner left the USPTO)
+```{r}
+indiv = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/indiv.csv')
+separation_ind = as.data.frame(indiv$new_pid)
+id_in_gs = unique(gs$new_pid)
+separation_ind$sep_ind = !(indiv$new_pid %in% id_in_gs)
+separation_ind
+```
+
+AU move indicator (examiner changed art units)
+```{r}
+move_ind = gs %>% group_by(new_pid) %>% summarize(current_art = n())
+move_ind = transform(move_ind, move_ind = ifelse(current_art == 1, FALSE, TRUE))
+move_ind
+```
+
+
+# Export all dataframes
+```{r}
+write.csv(new_app, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/new_app.csv', row.names = FALSE)
+write.csv(aban_app, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/aban_app.csv', row.names = FALSE)
+write.csv(allow_app, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/allow_app.csv', row.names = FALSE)
+write.csv(prog_app, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/prog_app.csv', row.names = FALSE)
+write.csv(current_art, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/current_art.csv', row.names = FALSE)
+write.csv(people_art, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/people_art.csv', row.names = FALSE)
+write.csv(art_gender, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/art_gender.csv', row.names = FALSE)
+write.csv(art_race, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/art_race.csv', row.names = FALSE)
+write.csv(separation_ind, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/separation_ind.csv', row.names = FALSE)
+write.csv(move_ind, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/move_ind.csv', row.names = FALSE)
+```
