@@ -1,0 +1,91 @@
+---
+title: "Exercise 2 Part 1"
+author: "Team 2"
+date: "2023-01-24"
+output:
+  github_document: default
+  pdf_document: default
+---
+# Import the Data
+```{r}
+aus = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/examiner_aus.csv')
+gs = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/examiner_gs.csv')
+ids = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/examiner_ids.csv')
+```
+
+```{r, message = FALSE, warning = FALSE}
+library(arrow)
+app = read_parquet('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/app_data_sample.parquet')
+```
+
+# Individual-Level Attributes
+## Get a table of individuals
+```{r, warnings = FALSE}
+# install.packages('stringr')
+# install.packages('dplyr')
+library(stringr)
+library(dplyr)
+indiv = ids
+indiv[c('last_name', 'first_name')] = str_split_fixed(indiv$examiner_name, ', ', 2)
+indiv[c('surname', 'middle_name')] = str_split_fixed(indiv$first_name, ' ', 2)
+indiv = indiv[, -c(3)]
+indiv
+```
+
+## Gender
+```{r, include = FALSE}
+# DO NOT RUN THIS CELL
+#library('gender')
+#i=1
+#answer=''
+#while (i<=19454) {
+#  answer=ifelse(is.null(gender(as.character(indiv[i, 'surname']))), 'NA', 
+#                gender(as.character(indiv[i, 'surname']))$proportion_female)
+#  indiv[i, 'gender']=ifelse(is.na(answer),'NA',answer)
+#  i = i+1
+#}
+```
+
+```{r}
+gender = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/indiv_gender.csv')
+gender$gender1 = round(gender$gender, digits = 0)
+gender = transform(gender, gender2 = ifelse(gender1 == 1, 'F', 'M'))
+gender = merge(x = gender, y = ids, by = 'new_pid', all.x = TRUE)
+```
+
+## Race
+```{r}
+library(wru)
+indiv_race = predict_race(voter.file = indiv, surname.only = TRUE)
+rownames(indiv_race) = 1:nrow(indiv_race)
+race = indiv_race[,c('pred.whi', 'pred.bla', 'pred.his', 'pred.asi', 'pred.oth')]
+indiv_race$race = colnames(race)[max.col(race)]
+indiv_race
+```
+
+## Tenure
+```{r}
+library(lubridate)
+library(tidyr)
+
+# Getting the current date
+gs1 = na.omit(gs)
+gs1$end_date = mdy(gs1$end_date)
+max(gs1$end_date) # 2016-08-22
+
+gs$end_date = gs$end_date %>% replace_na('08/22/16')
+gs$start_date = mdy(gs$start_date)
+gs$end_date = mdy(gs$end_date)
+
+# Group by individual
+tenure = gs %>% group_by(new_pid) %>% summarize(start = min(start_date), end = max(end_date), tenure = end - start)
+tenure
+```
+
+# Export all dataframes
+```{r}
+write.csv(indiv, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/indiv.csv', row.names = FALSE)
+write.csv(indiv_race, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/indiv_race.csv', row.names = FALSE)
+write.csv(gender, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/indiv_gender.csv', row.names = FALSE)
+write.csv(tenure, 'C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/tenure.csv', row.names = FALSE)
+```
