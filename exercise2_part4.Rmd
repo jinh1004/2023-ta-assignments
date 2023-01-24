@@ -1,0 +1,44 @@
+---
+title: "Exercise 2 Part 4"
+author: "Team 2"
+date: "2023-01-24"
+output:
+  github_document: default
+  pdf_document: default
+---
+# Import the Data
+```{r}
+indiv = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/final_indiv.csv')
+quarter = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/final_quarter.csv')
+
+art_curr = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/current_art.csv')
+
+art_people = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/people_art.csv')
+art_gender = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/art_gender.csv')
+art_race = read.csv('C:/Users/jinho/Documents/2023-ta-assignments/exercise2_data/art_race.csv')
+```
+
+# Turnover
+There is a good balance between people who are still in the company and people who have left
+```{r, warning = FALSE}
+library(dplyr)
+indiv %>% group_by(sep_ind) %>% summarize(sep = n())
+```
+
+```{r}
+turnover = glm(sep_ind ~ gender + race + tenure, data = indiv, family = 'binomial')
+summary(turnover)
+```
+
+# Change in art unit (mobility)
+The number of people who have changed art units far outweigh those who did not, so we can expect a very high accuracy if we split the data and predicted mobility on the test set. However, if we look at the confusion matrix it will produce, the model will most likely falsely identify FALSE cases as being TRUE
+```{r, warning = FALSE}
+library(dplyr)
+indiv %>% group_by(move_ind) %>% summarize(sep = n())
+```
+
+```{r}
+mobility = glm(move_ind ~ gender + race + tenure, data = indiv, family = 'binomial')
+summary(mobility)
+```
+
